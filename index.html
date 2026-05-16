@@ -9,42 +9,60 @@
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <style>
-
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:radial-gradient(circle at top,#145c43,#061f18);
 color:white;
 text-align:center;
-overflow-x:hidden;
+overflow:hidden;
 }
 
 .app{
-padding:15px;
-min-height:100vh;
+height:100vh;
+padding:10px;
 box-sizing:border-box;
+display:grid;
+grid-template-columns:48% 52%;
+grid-template-rows:auto auto 1fr auto;
+gap:8px;
 }
 
 h1{
-font-size:34px;
+grid-column:1 / 3;
+font-size:30px;
 color:#9cffb1;
-margin-bottom:5px;
+margin:0;
 }
 
-p{
+#introText{
+grid-column:1 / 3;
+margin:0;
+font-size:16px;
 color:#d8f5df;
 }
 
+.leftPanel{
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.rightPanel{
+display:flex;
+flex-direction:column;
+justify-content:center;
+gap:6px;
+}
+
 #cameraBox{
-width:100%;
-max-width:430px;
-height:320px;
-margin:15px auto;
+width:95%;
+height:64vh;
 background:black;
 border-radius:25px;
 overflow:hidden;
 border:4px solid #8effa3;
-box-shadow:0 0 35px rgba(142,255,163,0.6);
+box-shadow:0 0 25px rgba(142,255,163,0.6);
 }
 
 video,#uploadedImage{
@@ -58,23 +76,21 @@ display:none;
 }
 
 #result{
-font-size:24px;
+font-size:22px;
 font-weight:bold;
-padding:15px;
-border-radius:20px;
+padding:12px;
+border-radius:18px;
 background:white;
 color:#062018;
-margin:12px auto;
-max-width:430px;
+margin:0;
 }
 
-#scoreBox,#levelBox,#advice,#chatbot{
+#scoreBox,#levelBox,#advice,#chatbot,#omanRules{
 background:rgba(255,255,255,0.12);
-padding:13px;
+padding:10px;
 border-radius:15px;
-max-width:430px;
-margin:8px auto;
-line-height:1.5;
+line-height:1.4;
+font-size:16px;
 }
 
 #chatbot{
@@ -86,27 +102,26 @@ html[lang="ar"] #chatbot{
 text-align:right;
 }
 
-#chatbot h3{
-margin:0 0 8px;
+#chatbot h3,#omanRules h3{
+margin:0 0 5px;
 color:#9cffb1;
 text-align:center;
+font-size:18px;
 }
 
 .bins{
 display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-max-width:430px;
-margin:15px auto;
+grid-template-columns:1fr 1fr 1fr;
+gap:8px;
 }
 
 .bin{
-padding:15px;
-border-radius:18px;
-font-size:18px;
+padding:12px;
+border-radius:16px;
+font-size:16px;
 font-weight:bold;
-opacity:0.55;
-transition:0.4s;
+opacity:0.65;
+transition:0.3s;
 }
 
 .blue{background:#2196f3;}
@@ -116,24 +131,22 @@ transition:0.4s;
 .clean{background:#ffffff;color:#064221;}
 
 .activeBin{
-transform:scale(1.08);
+transform:scale(1.05);
 opacity:1;
-box-shadow:0 0 25px white;
+box-shadow:0 0 18px white;
 }
 
 .buttons{
 display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-max-width:430px;
-margin:15px auto;
+grid-template-columns:1fr 1fr 1fr;
+gap:8px;
 }
 
 button,label{
-padding:15px;
-font-size:16px;
+padding:12px;
+font-size:15px;
 border:none;
-border-radius:15px;
+border-radius:14px;
 background:#8effa3;
 color:#062018;
 font-weight:bold;
@@ -145,11 +158,55 @@ display:none;
 }
 
 .footer{
-font-size:14px;
-margin:20px auto;
+grid-column:1 / 3;
+font-size:13px;
+margin:0;
 color:#b9f5c7;
 }
 
+/* Mobile */
+@media (max-width:800px){
+body{
+overflow:auto;
+}
+
+.app{
+height:auto;
+display:block;
+padding:12px;
+}
+
+h1{
+font-size:32px;
+}
+
+#cameraBox{
+width:100%;
+height:300px;
+margin:15px auto;
+}
+
+.rightPanel{
+display:block;
+}
+
+#result,#scoreBox,#levelBox,#advice,#chatbot,#omanRules{
+margin:8px auto;
+max-width:430px;
+}
+
+.buttons{
+grid-template-columns:1fr 1fr;
+max-width:430px;
+margin:15px auto;
+}
+
+.bins{
+grid-template-columns:1fr 1fr;
+max-width:430px;
+margin:15px auto;
+}
+}
 </style>
 </head>
 
@@ -160,713 +217,460 @@ color:#b9f5c7;
 <h1>♻️ EcoTrack AI</h1>
 
 <p id="introText">
-Smart Waste Sorting Assistant 🇴🇲
+Smart Waste Sorting Assistant 🇴🇲<br>
+Aligned with Oman Vision 2040 and be’ah recycling awareness
 </p>
 
-<div id="cameraBox">
-<video id="video" autoplay playsinline muted></video>
-<img id="uploadedImage"/>
+<div class="leftPanel">
+  <div id="cameraBox">
+    <video id="video" autoplay playsinline muted></video>
+    <img id="uploadedImage"/>
+  </div>
 </div>
 
-<div id="result">
-Choose Language
-</div>
+<div class="rightPanel">
 
-<div id="scoreBox">
-⭐ Eco Points:
-<span id="score">0</span>
-</div>
+  <div id="result">Choose Language</div>
 
-<div id="levelBox">
-🏆 Level:
-<span id="level">Eco Beginner</span>
-</div>
+  <div id="scoreBox">
+    ⭐ Eco Points: <span id="score">0</span>
+  </div>
 
-<div id="advice">
-AI will scan automatically.
-</div>
+  <div id="levelBox">
+    🏆 Level: <span id="level">Eco Beginner</span>
+  </div>
 
-<div id="chatbot">
-<h3>🤖 EcoBot</h3>
+  <div id="advice">
+    AI will give the result automatically.
+  </div>
 
-<div id="botMessage">
-Start camera or upload image.
-</div>
-</div>
+  <div id="chatbot">
+    <h3>🤖 EcoBot Recycling Advice</h3>
+    <div id="botMessage">
+      Start the camera or upload an image. The result will appear directly.
+    </div>
+  </div>
 
-<div class="bins">
+  <div id="omanRules">
+    <h3>🇴🇲 Oman Recycling Rules</h3>
+    <span id="rulesText">
+      Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food Waste / Compost<br>
+      Keep recyclable items clean and dry before sorting.
+    </span>
+  </div>
 
-<div id="plasticBin" class="bin blue">
-♻️ Plastic
-</div>
+  <div class="bins">
+    <div id="plasticBin" class="bin blue">♻️ Plastic</div>
+    <div id="paperBin" class="bin yellow">📄 Paper</div>
+    <div id="metalBin" class="bin red">🥫 Metal</div>
+    <div id="foodBin" class="bin green">🍃 Food</div>
+    <div id="cleanBin" class="bin clean">✅ Clean</div>
+  </div>
 
-<div id="paperBin" class="bin yellow">
-📄 Paper
-</div>
-
-<div id="metalBin" class="bin red">
-🥫 Metal
-</div>
-
-<div id="foodBin" class="bin green">
-🍃 Food
-</div>
-
-<div id="cleanBin" class="bin clean">
-✅ Clean
-</div>
-
-</div>
-
-<div class="buttons">
-
-<button onclick="setLanguage('en')">
-English
-</button>
-
-<button onclick="setLanguage('ar')">
-العربية
-</button>
-
-<button onclick="startCamera()">
-Start Camera
-</button>
-
-<button onclick="switchCamera()">
-Switch Camera
-</button>
-
-<button onclick="stopCamera()">
-Stop Camera
-</button>
-
-<label for="imageUpload">
-Upload Image
-</label>
-
-<input
-type="file"
-id="imageUpload"
-accept="image/*"
-onchange="uploadImage(event)"
-/>
+  <div class="buttons">
+    <button onclick="setLanguage('en')">English</button>
+    <button onclick="setLanguage('ar')">العربية</button>
+    <button onclick="startCamera()">Start Camera</button>
+    <button onclick="switchCamera()">Switch Camera</button>
+    <label for="imageUpload">Upload Image</label>
+    <input type="file" id="imageUpload" accept="image/*" onchange="uploadImage(event)"/>
+    <button onclick="stopCamera()">Stop Camera</button>
+  </div>
 
 </div>
 
-<p class="footer">
-EcoTrack AI
+<p class="footer" id="footerText">
+Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food | Clean: No Waste
 </p>
 
 </div>
 
 <script>
-
-const MODEL_URL =
-"https://teachablemachine.withgoogle.com/models/xLF6pSu0j/";
+const MODEL_URL="https://teachablemachine.withgoogle.com/models/xLF6pSu0j/";
 
 let model;
-
-let video =
-document.getElementById("video");
-
-let uploadedImage =
-document.getElementById("uploadedImage");
-
-let currentStream = null;
-
-let facingMode = "environment";
-
-let ecoPoints = 0;
-
-let currentLanguage = "en";
-
-let autoScanActive = false;
-
-let lastSpeakTime = 0;
-
-let lastDetectedLabel = "";
-
-let lastDetectedTime = 0;
-
-
+let video=document.getElementById("video");
+let uploadedImage=document.getElementById("uploadedImage");
+let currentStream=null;
+let facingMode="environment";
+let ecoPoints=0;
+let currentLanguage="en";
+let autoScanActive=false;
+let lastSpeakTime=0;
+let lastDetectedLabel="";
+let lastDetectedTime=0;
 
 function setLanguage(lang){
+currentLanguage=lang;
 
-currentLanguage = lang;
+if(lang==="ar"){
+document.documentElement.lang="ar";
+document.body.style.direction="rtl";
 
-if(lang === "ar"){
+document.getElementById("introText").innerHTML=
+"مساعد ذكي لفرز المخلفات 🇴🇲<br>مرتبط برؤية عُمان 2040 والتوعية بإعادة التدوير";
 
-document.documentElement.lang = "ar";
+document.getElementById("result").innerText="تم اختيار العربية ✅";
+document.getElementById("advice").innerText="سيعطي الذكاء الاصطناعي النتيجة تلقائيًا.";
+document.getElementById("botMessage").innerText="شغّل الكاميرا أو ارفع صورة، وستظهر النتيجة مباشرة.";
+document.getElementById("rulesText").innerHTML=
+"الأزرق: بلاستيك | الأصفر: ورق | الأحمر: معدن | الأخضر: مخلفات طعام / سماد<br>اجعل المواد القابلة للتدوير نظيفة وجافة قبل فرزها.";
+document.getElementById("footerText").innerText=
+"الأزرق: بلاستيك | الأصفر: ورق | الأحمر: معدن | الأخضر: طعام | الأبيض: نظيف";
 
-document.body.style.direction = "rtl";
-
-document.getElementById("introText").innerHTML =
-"مساعد ذكي لفرز المخلفات 🇴🇲";
-
-document.getElementById("result").innerText =
-"تم اختيار العربية ✅";
-
-document.getElementById("advice").innerText =
-"سيتم التحليل تلقائيًا";
-
-document.getElementById("botMessage").innerText =
-"شغل الكاميرا أو ارفع صورة";
-
-document.getElementById("plasticBin").innerText =
-"♻️ بلاستيك";
-
-document.getElementById("paperBin").innerText =
-"📄 ورق";
-
-document.getElementById("metalBin").innerText =
-"🥫 معدن";
-
-document.getElementById("foodBin").innerText =
-"🍃 طعام";
-
-document.getElementById("cleanBin").innerText =
-"✅ نظيف";
-
-document.getElementById("level").innerText =
-"مبتدئ بيئي";
-
+document.getElementById("plasticBin").innerText="♻️ بلاستيك";
+document.getElementById("paperBin").innerText="📄 ورق";
+document.getElementById("metalBin").innerText="🥫 معدن";
+document.getElementById("foodBin").innerText="🍃 طعام";
+document.getElementById("cleanBin").innerText="✅ نظيف";
+document.getElementById("level").innerText="مبتدئ بيئي";
 }else{
+document.documentElement.lang="en";
+document.body.style.direction="ltr";
 
-document.documentElement.lang = "en";
+document.getElementById("introText").innerHTML=
+"Smart Waste Sorting Assistant 🇴🇲<br>Aligned with Oman Vision 2040 and be’ah recycling awareness";
 
-document.body.style.direction = "ltr";
+document.getElementById("result").innerText="English Selected ✅";
+document.getElementById("advice").innerText="AI will give the result automatically.";
+document.getElementById("botMessage").innerText="Start the camera or upload an image. The result will appear directly.";
+document.getElementById("rulesText").innerHTML=
+"Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food Waste / Compost<br>Keep recyclable items clean and dry before sorting.";
+document.getElementById("footerText").innerText=
+"Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food | Clean: No Waste";
 
-document.getElementById("introText").innerHTML =
-"Smart Waste Sorting Assistant 🇴🇲";
-
-document.getElementById("result").innerText =
-"English Selected ✅";
-
-document.getElementById("advice").innerText =
-"AI will scan automatically";
-
-document.getElementById("botMessage").innerText =
-"Start camera or upload image";
-
-document.getElementById("plasticBin").innerText =
-"♻️ Plastic";
-
-document.getElementById("paperBin").innerText =
-"📄 Paper";
-
-document.getElementById("metalBin").innerText =
-"🥫 Metal";
-
-document.getElementById("foodBin").innerText =
-"🍃 Food";
-
-document.getElementById("cleanBin").innerText =
-"✅ Clean";
-
-document.getElementById("level").innerText =
-"Eco Beginner";
-
+document.getElementById("plasticBin").innerText="♻️ Plastic";
+document.getElementById("paperBin").innerText="📄 Paper";
+document.getElementById("metalBin").innerText="🥫 Metal";
+document.getElementById("foodBin").innerText="🍃 Food";
+document.getElementById("cleanBin").innerText="✅ Clean";
+document.getElementById("level").innerText="Eco Beginner";
 }
-
 }
-
-
 
 async function loadModel(){
-
 if(model) return;
 
-const modelURL = MODEL_URL + "model.json";
+const modelURL=MODEL_URL+"model.json";
+const metadataURL=MODEL_URL+"metadata.json";
 
-const metadataURL = MODEL_URL + "metadata.json";
+document.getElementById("result").innerText=
+currentLanguage==="ar" ? "جاري تحميل النموذج..." : "Loading AI Model...";
 
-model =
-await tmImage.load(modelURL,metadataURL);
+model=await tmImage.load(modelURL,metadataURL);
 
-document.getElementById("result").innerText =
-currentLanguage === "ar"
-? "النموذج جاهز ✅"
-: "AI Ready ✅";
-
+document.getElementById("result").innerText=
+currentLanguage==="ar" ? "النموذج جاهز ✅" : "AI Model Ready ✅";
 }
 
-
-
 async function startCamera(){
-
-uploadedImage.style.display = "none";
-
-video.style.display = "block";
+uploadedImage.style.display="none";
+video.style.display="block";
 
 await loadModel();
 
 if(currentStream){
-
-currentStream
-.getTracks()
-.forEach(track => track.stop());
-
+currentStream.getTracks().forEach(track=>track.stop());
 }
 
 try{
-
-currentStream =
-await navigator.mediaDevices.getUserMedia({
-
+currentStream=await navigator.mediaDevices.getUserMedia({
 video:{
 facingMode:facingMode,
 width:{ideal:1280},
 height:{ideal:720}
 },
-
 audio:false
-
 });
 
-video.srcObject = currentStream;
+video.srcObject=currentStream;
 
-video.onloadedmetadata = async()=>{
-
+video.onloadedmetadata=async()=>{
 await video.play();
 
-document.getElementById("result").innerText =
-currentLanguage === "ar"
-? "الكاميرا تعمل 📷"
-: "Camera Ready 📷";
+document.getElementById("result").innerText=
+currentLanguage==="ar" ? "الكاميرا تعمل 📷" : "Camera Ready 📷";
 
-autoScanActive = true;
-
+autoScanActive=true;
 autoPredict();
-
 };
 
 }catch(error){
-
 console.error(error);
 
-document.getElementById("result").innerText =
-currentLanguage === "ar"
-? "خطأ بالكاميرا ❌"
-: "Camera Error ❌";
+document.getElementById("result").innerText=
+currentLanguage==="ar" ? "خطأ بالكاميرا ❌" : "Camera Error ❌";
 
+document.getElementById("botMessage").innerText=
+currentLanguage==="ar"
+? "اسمح باستخدام الكاميرا وافتح الموقع من GitHub Pages أو Live Server."
+: "Allow camera permission and open the site from GitHub Pages or Live Server.";
 }
-
 }
-
-
 
 async function autoPredict(){
+if(!autoScanActive || !model || !currentStream) return;
 
-if(
-!autoScanActive ||
-!model ||
-!currentStream
-) return;
-
-if(video.readyState >= 2){
-
-const prediction =
-await model.predict(video);
-
+if(video.readyState>=2){
+const prediction=await model.predict(video);
 showBestResult(prediction);
-
 }
 
 setTimeout(autoPredict,2000);
-
 }
-
-
 
 async function switchCamera(){
-
-facingMode =
-facingMode === "environment"
-? "user"
-: "environment";
-
+facingMode=facingMode==="environment" ? "user" : "environment";
 await startCamera();
-
 }
-
-
 
 function stopCamera(){
-
-autoScanActive = false;
+autoScanActive=false;
 
 if(currentStream){
-
-currentStream
-.getTracks()
-.forEach(track => track.stop());
-
-currentStream = null;
-
+currentStream.getTracks().forEach(track=>track.stop());
+currentStream=null;
 }
 
-video.srcObject = null;
+video.srcObject=null;
 
-document.getElementById("result").innerText =
-currentLanguage === "ar"
-? "تم إيقاف الكاميرا"
-: "Camera Stopped";
-
+document.getElementById("result").innerText=
+currentLanguage==="ar" ? "تم إيقاف الكاميرا" : "Camera Stopped";
 }
-
-
 
 async function uploadImage(event){
-
 await loadModel();
-
 stopCamera();
 
-const file = event.target.files[0];
-
+const file=event.target.files[0];
 if(!file) return;
 
-const imageURL =
-URL.createObjectURL(file);
+const imageURL=URL.createObjectURL(file);
+uploadedImage.src=imageURL;
+uploadedImage.style.display="block";
+video.style.display="none";
 
-uploadedImage.src = imageURL;
-
-uploadedImage.style.display = "block";
-
-video.style.display = "none";
-
-uploadedImage.onload = async()=>{
-
-const prediction =
-await model.predict(uploadedImage);
-
+uploadedImage.onload=async()=>{
+const prediction=await model.predict(uploadedImage);
 showBestResult(prediction);
-
 };
-
 }
-
-
 
 function showBestResult(predictions){
-
-let best = predictions[0];
+let best=predictions[0];
 
 for(let i=1;i<predictions.length;i++){
-
-if(
-predictions[i].probability >
-best.probability
-){
-
-best = predictions[i];
-
+if(predictions[i].probability>best.probability){
+best=predictions[i];
+}
 }
 
-}
+const label=best.className;
+const confidence=Math.round(best.probability*100);
 
-const label = best.className;
+if(confidence<70){
+resetBins();
 
-const confidence =
-Math.round(best.probability * 100);
+document.getElementById("result").innerText=
+currentLanguage==="ar"
+? "النتيجة غير واضحة - " + confidence + "%"
+: "Unclear Result - " + confidence + "%";
 
-if(confidence < 70){
-
-document.getElementById("result").innerText =
-currentLanguage === "ar"
-? "النتيجة غير واضحة"
-: "Unclear Result";
+document.getElementById("advice").innerText=
+currentLanguage==="ar"
+? "استخدم إضاءة أفضل وخلفية بسيطة وعنصرًا واحدًا فقط."
+: "Use better lighting, plain background, and one item only.";
 
 return;
-
 }
 
-document.getElementById("result").innerText =
-label + " - " + confidence + "%";
-
+document.getElementById("result").innerText=label+" - "+confidence+"%";
 giveAdvice(label);
-
 }
-
-
 
 function resetBins(){
-
-document
-.querySelectorAll(".bin")
-.forEach(bin=>{
-
+document.querySelectorAll(".bin").forEach(bin=>{
 bin.classList.remove("activeBin");
-
 });
-
 }
 
-
-
 function speak(text){
-
 if(!("speechSynthesis" in window)) return;
 
-const now = Date.now();
-
-if(now - lastSpeakTime < 2500) return;
-
-lastSpeakTime = now;
+const now=Date.now();
+if(now-lastSpeakTime<2500) return;
+lastSpeakTime=now;
 
 window.speechSynthesis.cancel();
 
-const voices =
-window.speechSynthesis.getVoices();
+const voices=window.speechSynthesis.getVoices();
+let msg=new SpeechSynthesisUtterance(text);
 
-let msg =
-new SpeechSynthesisUtterance(text);
+msg.volume=1;
+msg.rate=0.9;
+msg.pitch=1;
 
-msg.volume = 1;
-
-msg.rate = 0.9;
-
-msg.pitch = 1;
-
-if(currentLanguage === "ar"){
-
-msg.lang = "ar-SA";
-
-let arabicVoice =
-voices.find(v =>
-v.lang.toLowerCase().includes("ar")
-);
-
+if(currentLanguage==="ar"){
+msg.lang="ar-SA";
+let arabicVoice=voices.find(v=>v.lang.toLowerCase().includes("ar"));
 if(arabicVoice){
-
-msg.voice = arabicVoice;
-
+msg.voice=arabicVoice;
 }
-
 }else{
-
-msg.lang = "en-US";
-
+msg.lang="en-US";
 }
 
 window.speechSynthesis.speak(msg);
-
 }
 
-
-
-window.speechSynthesis.onvoiceschanged = ()=>{
-
+window.speechSynthesis.onvoiceschanged=()=>{
 window.speechSynthesis.getVoices();
-
 };
 
-
-
 function addPoints(){
+ecoPoints+=10;
+document.getElementById("score").innerText=ecoPoints;
 
-ecoPoints += 10;
+let level=currentLanguage==="ar" ? "مبتدئ بيئي" : "Eco Beginner";
 
-document.getElementById("score").innerText =
-ecoPoints;
-
+if(ecoPoints>=50){
+level=currentLanguage==="ar" ? "بطل البيئة" : "Eco Hero";
 }
 
+if(ecoPoints>=100){
+level=currentLanguage==="ar" ? "بطل إعادة التدوير" : "Recycling Champion";
+}
 
+if(ecoPoints>=200){
+level=currentLanguage==="ar" ? "قائد الاستدامة" : "Sustainability Leader";
+}
+
+document.getElementById("level").innerText=level;
+}
 
 function giveAdvice(label){
+const now=Date.now();
 
-const now = Date.now();
-
-if(
-label === lastDetectedLabel &&
-now - lastDetectedTime < 6000
-){
+if(label===lastDetectedLabel && now-lastDetectedTime<6000){
 return;
 }
 
-lastDetectedLabel = label;
-
-lastDetectedTime = now;
+lastDetectedLabel=label;
+lastDetectedTime=now;
 
 resetBins();
 
-const item = label.toLowerCase();
+const item=label.toLowerCase();
 
-let advice = "";
-
-let botText = "";
-
-let speechText = "";
-
-let color = "#ffffff";
-
-
+let advice="";
+let botText="";
+let speechText="";
+let color="#ffffff";
 
 if(item.includes("plastic")){
-
 addPoints();
 
-advice =
-currentLanguage === "ar"
+advice=currentLanguage==="ar"
 ? "♻️ بلاستيك → الحاوية الزرقاء"
 : "♻️ Plastic → BLUE bin";
 
-botText =
-currentLanguage === "ar"
-? "يجب أن يكون البلاستيك نظيفًا"
-: "Plastic should be clean";
+botText=currentLanguage==="ar"
+? "يجب أن يكون البلاستيك نظيفًا وجافًا قبل إعادة التدوير."
+: "Plastic should be clean and dry before recycling.";
 
-speechText =
-currentLanguage === "ar"
+speechText=currentLanguage==="ar"
 ? "بلاستيك. ضعه في الحاوية الزرقاء"
-: "Plastic detected";
+: "Plastic detected. Put it in the blue bin.";
 
-color = "#4da6ff";
-
-document
-.getElementById("plasticBin")
-.classList.add("activeBin");
-
+color="#4da6ff";
+document.getElementById("plasticBin").classList.add("activeBin");
 }
 
-
-
 else if(item.includes("paper")){
-
 addPoints();
 
-advice =
-currentLanguage === "ar"
+advice=currentLanguage==="ar"
 ? "📄 ورق → الحاوية الصفراء"
 : "📄 Paper → YELLOW bin";
 
-botText =
-currentLanguage === "ar"
-? "يجب أن يكون الورق جافًا"
-: "Paper should be dry";
+botText=currentLanguage==="ar"
+? "يجب أن يكون الورق جافًا ونظيفًا."
+: "Paper should be dry and clean.";
 
-speechText =
-currentLanguage === "ar"
+speechText=currentLanguage==="ar"
 ? "ورق. ضعه في الحاوية الصفراء"
-: "Paper detected";
+: "Paper detected. Put it in the yellow bin.";
 
-color = "#ffe066";
-
-document
-.getElementById("paperBin")
-.classList.add("activeBin");
-
+color="#ffe066";
+document.getElementById("paperBin").classList.add("activeBin");
 }
 
-
-
 else if(item.includes("metal")){
-
 addPoints();
 
-advice =
-currentLanguage === "ar"
+advice=currentLanguage==="ar"
 ? "🥫 معدن → الحاوية الحمراء"
 : "🥫 Metal → RED bin";
 
-botText =
-currentLanguage === "ar"
-? "أعد تدوير المعادن"
-: "Recycle metal items";
+botText=currentLanguage==="ar"
+? "أفرغ العلب المعدنية واشطفها قبل إعادة التدوير."
+: "Empty and rinse metal cans before recycling.";
 
-speechText =
-currentLanguage === "ar"
+speechText=currentLanguage==="ar"
 ? "معدن. ضعه في الحاوية الحمراء"
-: "Metal detected";
+: "Metal detected. Put it in the red bin.";
 
-color = "#ff6b6b";
-
-document
-.getElementById("metalBin")
-.classList.add("activeBin");
-
+color="#ff6b6b";
+document.getElementById("metalBin").classList.add("activeBin");
 }
 
-
-
 else if(item.includes("food")){
-
 addPoints();
 
-advice =
-currentLanguage === "ar"
+advice=currentLanguage==="ar"
 ? "🍃 طعام → الحاوية الخضراء"
 : "🍃 Food → GREEN bin";
 
-botText =
-currentLanguage === "ar"
-? "يمكن تحويل الطعام إلى سماد"
-: "Food waste can become compost";
+botText=currentLanguage==="ar"
+? "يمكن تحويل بقايا الطعام إلى سماد مفيد للتربة."
+: "Food waste can become compost for soil.";
 
-speechText =
-currentLanguage === "ar"
+speechText=currentLanguage==="ar"
 ? "مخلفات طعام. ضعها في الحاوية الخضراء"
-: "Food waste detected";
+: "Food waste detected. Put it in the green bin.";
 
-color = "#63e66d";
-
-document
-.getElementById("foodBin")
-.classList.add("activeBin");
-
+color="#63e66d";
+document.getElementById("foodBin").classList.add("activeBin");
 }
 
-
-
 else if(item.includes("clean")){
-
 addPoints();
 
-advice =
-currentLanguage === "ar"
+advice=currentLanguage==="ar"
 ? "✅ المكان نظيف"
 : "✅ Area is clean";
 
-botText =
-currentLanguage === "ar"
-? "عمل رائع"
-: "Great job";
+botText=currentLanguage==="ar"
+? "عمل رائع. استمر في الحفاظ على النظافة."
+: "Great job. Keep the area clean.";
 
-speechText =
-currentLanguage === "ar"
+speechText=currentLanguage==="ar"
 ? "المكان نظيف"
-: "Area clean";
+: "The area is clean.";
 
-color = "#ffffff";
-
-document
-.getElementById("cleanBin")
-.classList.add("activeBin");
-
+color="#ffffff";
+document.getElementById("cleanBin").classList.add("activeBin");
 }
 
-
-
-document.getElementById("advice").innerText =
-advice;
-
-document.getElementById("botMessage").innerText =
-botText;
-
-document.getElementById("result").style.background =
-color;
+document.getElementById("advice").innerText=advice;
+document.getElementById("botMessage").innerText=botText;
+document.getElementById("result").style.background=color;
 
 speak(speechText);
-
 }
 
-
-
 setLanguage("en");
-
 loadModel();
-
 </script>
 
 </body>
