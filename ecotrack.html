@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoTrack AI</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #145c43, #061f18);
+      color: white;
+      text-align: center;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 36px;
+      color: #9cffb1;
+      margin-bottom: 5px;
+    }
+
+    p {
+      color: #d8f5df;
+    }
+
+    #cameraBox {
+      width: 100%;
+      max-width: 430px;
+      height: 320px;
+      margin: 15px auto;
+      background: black;
+      border-radius: 25px;
+      overflow: hidden;
+      border: 4px solid #8effa3;
+      box-shadow: 0 0 35px rgba(142,255,163,0.6);
+    }
+
+    video, #uploadedImage {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #uploadedImage {
+      display: none;
+    }
+
+    #result {
+      font-size: 26px;
+      font-weight: bold;
+      padding: 15px;
+      border-radius: 20px;
+      background: white;
+      color: #062018;
+      margin: 12px auto;
+      max-width: 430px;
+    }
+
+    #advice, #chatbot {
+      font-size: 17px;
+      background: rgba(255,255,255,0.12);
+      padding: 13px;
+      border-radius: 15px;
+      max-width: 430px;
+      margin: 8px auto;
+      line-height: 1.5;
+    }
+
+    #chatbot {
+      text-align: left;
+      border: 2px solid rgba(156,255,177,0.4);
+    }
+
+    #chatbot h3 {
+      margin: 0 0 8px;
+      color: #9cffb1;
+      text-align: center;
+    }
+
+    #botMessage {
+      color: #ffffff;
+      font-size: 16px;
+    }
+
+    .bins {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 430px;
+      margin: 15px auto;
+    }
+
+    .bin {
+      padding: 15px;
+      border-radius: 18px;
+      font-size: 18px;
+      font-weight: bold;
+      opacity: 0.55;
+      transition: 0.4s;
+    }
+
+    .blue { background: #2196f3; }
+    .yellow { background: #fbc02d; color: black; }
+    .red { background: #f44336; }
+    .green { background: #4caf50; }
+    .clean { background: #ffffff; color: #064221; }
+
+    .activeBin {
+      transform: scale(1.08);
+      opacity: 1;
+      box-shadow: 0 0 25px white;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 430px;
+      margin: 15px auto;
+    }
+
+    button, label {
+      padding: 15px;
+      font-size: 17px;
+      border: none;
+      border-radius: 15px;
+      background: #8effa3;
+      color: #062018;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    input {
+      display: none;
+    }
+
+    .footer {
+      font-size: 14px;
+      margin: 20px auto;
+      color: #b9f5c7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+    <h1>♻️ EcoTrack AI</h1>
+    <p>Smart Waste Sorting Assistant</p>
+
+    <div id="cameraBox">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="uploadedImage" />
+    </div>
+
+    <div id="result">Press Start Camera</div>
+
+    <div id="advice">
+      AI will tell you where to throw the waste.
+    </div>
+
+    <div id="chatbot">
+      <h3>🤖 EcoBot Recycling Advice</h3>
+      <div id="botMessage">
+        Scan or upload waste, and EcoBot will explain how to recycle it correctly.
+      </div>
+    </div>
+
+    <div class="bins">
+      <div id="plasticBin" class="bin blue">♻️ Plastic</div>
+      <div id="paperBin" class="bin yellow">📄 Paper</div>
+      <div id="metalBin" class="bin red">🥫 Metal</div>
+      <div id="foodBin" class="bin green">🍃 Food</div>
+      <div id="cleanBin" class="bin clean">✅ Clean</div>
+    </div>
+
+    <div class="buttons">
+      <button onclick="startCamera()">Start Camera</button>
+      <button onclick="switchCamera()">Switch Camera</button>
+
+      <label for="imageUpload">Upload Image</label>
+      <input type="file" id="imageUpload" accept="image/*" onchange="uploadImage(event)" />
+
+      <button onclick="predictCamera()">Scan Waste</button>
+      <button onclick="stopCamera()">Stop Camera</button>
+    </div>
+
+    <p class="footer">
+      Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food | Clean: No Waste
+    </p>
+  </div>
+
+  <script>
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/xLF6pSu0j/";
+
+    let model;
+    let video = document.getElementById("video");
+    let uploadedImage = document.getElementById("uploadedImage");
+    let currentStream = null;
+    let facingMode = "environment";
+
+    async function loadModel() {
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      document.getElementById("result").innerText = "AI Model Ready ✅";
+    }
+
+    async function startCamera() {
+      uploadedImage.style.display = "none";
+      video.style.display = "block";
+
+      if (!model) {
+        document.getElementById("result").innerText = "Loading AI Model...";
+        await loadModel();
+      }
+
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: facingMode,
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        video.srcObject = currentStream;
+        await video.play();
+
+        document.getElementById("result").innerText = "Camera Ready 📷";
+        document.getElementById("advice").innerText =
+          "Place one waste item clearly in front of the camera, then press Scan Waste.";
+
+        document.getElementById("botMessage").innerText =
+          "I am ready. Show me one item clearly so I can give recycling advice.";
+
+      } catch (error) {
+        document.getElementById("result").innerText = "Camera Blocked ❌";
+        document.getElementById("advice").innerText =
+          "Allow camera permission. Use Live Server or HTTPS. Do not open as file.";
+        document.getElementById("botMessage").innerText =
+          "Camera is blocked. Open the website from GitHub Pages HTTPS and allow camera permission.";
+        console.error(error);
+      }
+    }
+
+    async function switchCamera() {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      await startCamera();
+    }
+
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+
+      video.srcObject = null;
+      document.getElementById("result").innerText = "Camera Stopped";
+      document.getElementById("advice").innerText = "Press Start Camera to scan again.";
+      document.getElementById("botMessage").innerText =
+        "Camera stopped. You can start again or upload an image.";
+    }
+
+    async function predictCamera() {
+      if (!model) {
+        await loadModel();
+      }
+
+      if (!currentStream) {
+        document.getElementById("result").innerText = "Start camera first";
+        document.getElementById("advice").innerText =
+          "Press Start Camera, allow permission, then scan again.";
+        document.getElementById("botMessage").innerText =
+          "I cannot scan without camera access. Start the camera first.";
+        return;
+      }
+
+      if (video.readyState < 2) {
+        document.getElementById("result").innerText = "Camera not ready yet";
+        document.getElementById("advice").innerText =
+          "Wait 2 seconds after starting the camera.";
+        document.getElementById("botMessage").innerText =
+          "The camera is not ready. Wait a moment, then scan again.";
+        return;
+      }
+
+      document.getElementById("result").innerText = "Scanning... 🔍";
+
+      const prediction = await model.predict(video);
+      showBestResult(prediction);
+    }
+
+    async function uploadImage(event) {
+      if (!model) {
+        await loadModel();
+      }
+
+      stopCamera();
+
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const imageURL = URL.createObjectURL(file);
+
+      uploadedImage.src = imageURL;
+      uploadedImage.style.display = "block";
+      video.style.display = "none";
+
+      uploadedImage.onload = async () => {
+        document.getElementById("result").innerText = "Scanning Image... 🔍";
+        document.getElementById("botMessage").innerText =
+          "Analyzing the uploaded image...";
+        const prediction = await model.predict(uploadedImage);
+        showBestResult(prediction);
+      };
+    }
+
+    function showBestResult(predictions) {
+      let best = predictions[0];
+
+      for (let i = 1; i < predictions.length; i++) {
+        if (predictions[i].probability > best.probability) {
+          best = predictions[i];
+        }
+      }
+
+      const label = best.className;
+      const confidence = Math.round(best.probability * 100);
+
+      if (confidence < 70) {
+        resetBins();
+
+        document.getElementById("result").innerText =
+          "Unclear Result - " + confidence + "%";
+
+        document.getElementById("result").style.background = "#ffffff";
+
+        document.getElementById("advice").innerText =
+          "❌ The AI is not confident. Use better lighting, plain background, and one item only.";
+
+        document.getElementById("botMessage").innerText =
+          "I am not confident enough. Use one item only, place it closer to the camera, use a plain background, and improve lighting.";
+
+        speak("The result is unclear. Try again with better lighting.");
+        return;
+      }
+
+      document.getElementById("result").innerText =
+        label + " - " + confidence + "%";
+
+      giveAdvice(label);
+    }
+
+    function resetBins() {
+      document.querySelectorAll(".bin").forEach(bin => {
+        bin.classList.remove("activeBin");
+      });
+    }
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = "en-US";
+      msg.rate = 0.95;
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(msg);
+    }
+
+    function giveAdvice(label) {
+      let advice = "";
+      let botText = "";
+      let color = "#ffffff";
+
+      resetBins();
+
+      const item = label.toLowerCase();
+
+      if (item.includes("plastic")) {
+        advice = "♻️ Plastic detected. Put it in the BLUE bin.";
+        botText = "Plastic can be recycled if it is clean and dry. Empty bottles, rinse them quickly, remove leftover liquid, and crush them to save space. Do not mix dirty plastic with clean recycling.";
+        color = "#4da6ff";
+        document.getElementById("plasticBin").classList.add("activeBin");
+        speak("Plastic detected. Put it in the blue bin.");
+      }
+
+      else if (item.includes("paper")) {
+        advice = "📄 Paper detected. Put it in the YELLOW bin.";
+        botText = "Paper should be clean and dry before recycling. Reuse it first if possible. Remove food stains, plastic covers, and tape. Dirty tissue or oily paper should not go into paper recycling.";
+        color = "#ffe066";
+        document.getElementById("paperBin").classList.add("activeBin");
+        speak("Paper detected. Put it in the yellow bin.");
+      }
+
+      else if (item.includes("metal")) {
+        advice = "🥫 Metal detected. Put it in the RED bin.";
+        botText = "Metal cans can be recycled many times. Empty the can, rinse it quickly, and place it in the metal bin. If the metal is sharp, handle it carefully and ask an adult for help.";
+        color = "#ff6b6b";
+        document.getElementById("metalBin").classList.add("activeBin");
+        speak("Metal detected. Put it in the red bin.");
+      }
+
+      else if (item.includes("food")) {
+        advice = "🍃 Food waste detected. Put it in the GREEN bin for compost.";
+        botText = "Food waste should not go into normal recycling. Fruit peels, vegetable scraps, tea leaves, and coffee grounds can become compost. Avoid adding plastic, metal, or glass to compost.";
+        color = "#63e66d";
+        document.getElementById("foodBin").classList.add("activeBin");
+        speak("Food waste detected. Put it in the green bin for compost.");
+      }
+
+      else if (item.includes("clean")) {
+        advice = "✅ The area looks clean. Great job keeping the environment safe!";
+        botText = "The area looks clean. Keep it that way by checking regularly, reducing single-use items, and reminding others to sort waste correctly.";
+        color = "#ffffff";
+        document.getElementById("cleanBin").classList.add("activeBin");
+        speak("The area looks clean. Great job.");
+      }
+
+      else {
+        advice = "❌ Unknown item. Train the model better.";
+        botText = "I do not recognize this item. Add more training images to your Teachable Machine model from different angles, backgrounds, and lighting.";
+        color = "#ffffff";
+        speak("Unknown item. Train the model better.");
+      }
+
+      document.getElementById("advice").innerText = advice;
+      document.getElementById("botMessage").innerText = botText;
+      document.getElementById("result").style.background = color;
+    }
+
+    loadModel();
+  </script>
+
+</body>
+</html>
