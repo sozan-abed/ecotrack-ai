@@ -29,9 +29,7 @@
       margin-bottom: 5px;
     }
 
-    p {
-      color: #d8f5df;
-    }
+    p { color: #d8f5df; }
 
     #cameraBox {
       width: 100%;
@@ -51,9 +49,7 @@
       object-fit: cover;
     }
 
-    #uploadedImage {
-      display: none;
-    }
+    #uploadedImage { display: none; }
 
     #result {
       font-size: 26px;
@@ -66,7 +62,17 @@
       max-width: 430px;
     }
 
-    #advice, #chatbot {
+    #scoreBox, #levelBox {
+      background: rgba(255,255,255,0.12);
+      padding: 12px;
+      border-radius: 15px;
+      max-width: 430px;
+      margin: 10px auto;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #advice, #chatbot, #omanRules, #leaderboard {
       font-size: 17px;
       background: rgba(255,255,255,0.12);
       padding: 13px;
@@ -81,7 +87,7 @@
       border: 2px solid rgba(156,255,177,0.4);
     }
 
-    #chatbot h3 {
+    #chatbot h3, #leaderboard h3, #omanRules h3 {
       margin: 0 0 8px;
       color: #9cffb1;
       text-align: center;
@@ -90,6 +96,14 @@
     #botMessage {
       color: #ffffff;
       font-size: 16px;
+    }
+
+    .leaderItem {
+      background: rgba(255,255,255,0.08);
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 10px;
+      font-weight: bold;
     }
 
     .bins {
@@ -140,9 +154,7 @@
       cursor: pointer;
     }
 
-    input {
-      display: none;
-    }
+    input { display: none; }
 
     .footer {
       font-size: 14px;
@@ -153,17 +165,28 @@
 </head>
 
 <body>
-
   <div class="app">
     <h1>♻️ EcoTrack AI</h1>
-    <p>Smart Waste Sorting Assistant</p>
+
+    <p>
+      Smart Waste Sorting Assistant 🇴🇲<br>
+      Aligned with Oman Vision 2040 and be’ah recycling awareness
+    </p>
 
     <div id="cameraBox">
       <video id="video" autoplay playsinline muted></video>
       <img id="uploadedImage" />
     </div>
 
-    <div id="result">Press Start Camera</div>
+    <div id="result">Choose Arabic or English</div>
+
+    <div id="scoreBox">
+      ⭐ Eco Points: <span id="score">0</span>
+    </div>
+
+    <div id="levelBox">
+      🏆 Level: <span id="level">Eco Beginner</span>
+    </div>
 
     <div id="advice">
       AI will tell you where to throw the waste.
@@ -176,6 +199,19 @@
       </div>
     </div>
 
+    <div id="omanRules">
+      <h3>🇴🇲 Oman Recycling Rules</h3>
+      Blue: Plastic | Yellow: Paper | Red: Metal | Green: Food Waste / Compost<br>
+      Keep recyclable items clean and dry before sorting.
+    </div>
+
+    <div id="leaderboard">
+      <h3>🏫 School Recycling Leaderboard</h3>
+      <div class="leaderItem">Grade 4A — 320 pts</div>
+      <div class="leaderItem">Grade 5B — 270 pts</div>
+      <div class="leaderItem">Grade 3C — 180 pts</div>
+    </div>
+
     <div class="bins">
       <div id="plasticBin" class="bin blue">♻️ Plastic</div>
       <div id="paperBin" class="bin yellow">📄 Paper</div>
@@ -185,6 +221,8 @@
     </div>
 
     <div class="buttons">
+      <button onclick="setLanguage('en')">English</button>
+      <button onclick="setLanguage('ar')">العربية</button>
       <button onclick="startCamera()">Start Camera</button>
       <button onclick="switchCamera()">Switch Camera</button>
 
@@ -208,13 +246,43 @@
     let uploadedImage = document.getElementById("uploadedImage");
     let currentStream = null;
     let facingMode = "environment";
+    let ecoPoints = 0;
+    let currentLanguage = "en";
+
+    function setLanguage(lang) {
+      currentLanguage = lang;
+
+      if (lang === "ar") {
+        document.documentElement.lang = "ar";
+        document.body.style.direction = "rtl";
+
+        document.getElementById("result").innerText = "تم اختيار اللغة العربية ✅";
+        document.getElementById("advice").innerText = "سيخبرك الذكاء الاصطناعي أين تضع المخلفات.";
+        document.getElementById("botMessage").innerText = "افحص أو ارفع صورة للمخلفات وسأعطيك إرشادات إعادة التدوير.";
+        document.getElementById("level").innerText = "مبتدئ بيئي";
+        speak("تم اختيار اللغة العربية");
+      } else {
+        document.documentElement.lang = "en";
+        document.body.style.direction = "ltr";
+
+        document.getElementById("result").innerText = "English selected ✅";
+        document.getElementById("advice").innerText = "AI will tell you where to throw the waste.";
+        document.getElementById("botMessage").innerText = "Scan or upload waste, and EcoBot will explain how to recycle it correctly.";
+        document.getElementById("level").innerText = "Eco Beginner";
+        speak("English selected");
+      }
+
+      updateScore();
+    }
 
     async function loadModel() {
       const modelURL = MODEL_URL + "model.json";
       const metadataURL = MODEL_URL + "metadata.json";
 
       model = await tmImage.load(modelURL, metadataURL);
-      document.getElementById("result").innerText = "AI Model Ready ✅";
+
+      document.getElementById("result").innerText =
+        currentLanguage === "ar" ? "النموذج جاهز ✅" : "AI Model Ready ✅";
     }
 
     async function startCamera() {
@@ -222,7 +290,8 @@
       video.style.display = "block";
 
       if (!model) {
-        document.getElementById("result").innerText = "Loading AI Model...";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "جاري تحميل النموذج..." : "Loading AI Model...";
         await loadModel();
       }
 
@@ -243,19 +312,36 @@
         video.srcObject = currentStream;
         await video.play();
 
-        document.getElementById("result").innerText = "Camera Ready 📷";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "الكاميرا جاهزة 📷" : "Camera Ready 📷";
+
         document.getElementById("advice").innerText =
-          "Place one waste item clearly in front of the camera, then press Scan Waste.";
+          currentLanguage === "ar"
+            ? "ضع عنصرًا واحدًا بوضوح أمام الكاميرا، ثم اضغط على فحص المخلفات."
+            : "Place one waste item clearly in front of the camera, then press Scan Waste.";
 
         document.getElementById("botMessage").innerText =
-          "I am ready. Show me one item clearly so I can give recycling advice.";
+          currentLanguage === "ar"
+            ? "أنا جاهز. أرني عنصرًا واحدًا بوضوح لأعطيك نصيحة إعادة التدوير."
+            : "I am ready. Show me one item clearly so I can give recycling advice.";
+
+        speak(currentLanguage === "ar" ? "الكاميرا جاهزة" : "Camera is ready");
 
       } catch (error) {
-        document.getElementById("result").innerText = "Camera Blocked ❌";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "الكاميرا محظورة ❌" : "Camera Blocked ❌";
+
         document.getElementById("advice").innerText =
-          "Allow camera permission. Use Live Server or HTTPS. Do not open as file.";
+          currentLanguage === "ar"
+            ? "اسمح باستخدام الكاميرا. افتح الموقع عبر HTTPS وليس كملف."
+            : "Allow camera permission. Use HTTPS. Do not open as file.";
+
         document.getElementById("botMessage").innerText =
-          "Camera is blocked. Open the website from GitHub Pages HTTPS and allow camera permission.";
+          currentLanguage === "ar"
+            ? "الكاميرا محظورة. افتح الموقع من GitHub Pages واسمح بالكاميرا."
+            : "Camera is blocked. Open the website from GitHub Pages HTTPS and allow camera permission.";
+
+        speak(currentLanguage === "ar" ? "الكاميرا محظورة" : "Camera blocked");
         console.error(error);
       }
     }
@@ -272,10 +358,17 @@
       }
 
       video.srcObject = null;
-      document.getElementById("result").innerText = "Camera Stopped";
-      document.getElementById("advice").innerText = "Press Start Camera to scan again.";
+
+      document.getElementById("result").innerText =
+        currentLanguage === "ar" ? "تم إيقاف الكاميرا" : "Camera Stopped";
+
+      document.getElementById("advice").innerText =
+        currentLanguage === "ar" ? "اضغط بدء الكاميرا للفحص مرة أخرى." : "Press Start Camera to scan again.";
+
       document.getElementById("botMessage").innerText =
-        "Camera stopped. You can start again or upload an image.";
+        currentLanguage === "ar" ? "تم إيقاف الكاميرا. يمكنك البدء مرة أخرى أو رفع صورة." : "Camera stopped. You can start again or upload an image.";
+
+      speak(currentLanguage === "ar" ? "تم إيقاف الكاميرا" : "Camera stopped");
     }
 
     async function predictCamera() {
@@ -284,24 +377,28 @@
       }
 
       if (!currentStream) {
-        document.getElementById("result").innerText = "Start camera first";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "ابدأ الكاميرا أولًا" : "Start camera first";
+
         document.getElementById("advice").innerText =
-          "Press Start Camera, allow permission, then scan again.";
-        document.getElementById("botMessage").innerText =
-          "I cannot scan without camera access. Start the camera first.";
+          currentLanguage === "ar"
+            ? "اضغط بدء الكاميرا واسمح بالإذن ثم افحص مرة أخرى."
+            : "Press Start Camera, allow permission, then scan again.";
+
+        speak(currentLanguage === "ar" ? "ابدأ الكاميرا أولًا" : "Start camera first");
         return;
       }
 
       if (video.readyState < 2) {
-        document.getElementById("result").innerText = "Camera not ready yet";
-        document.getElementById("advice").innerText =
-          "Wait 2 seconds after starting the camera.";
-        document.getElementById("botMessage").innerText =
-          "The camera is not ready. Wait a moment, then scan again.";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "الكاميرا ليست جاهزة بعد" : "Camera not ready yet";
+
+        speak(currentLanguage === "ar" ? "انتظر قليلًا" : "Wait a moment");
         return;
       }
 
-      document.getElementById("result").innerText = "Scanning... 🔍";
+      document.getElementById("result").innerText =
+        currentLanguage === "ar" ? "جاري الفحص 🔍" : "Scanning... 🔍";
 
       const prediction = await model.predict(video);
       showBestResult(prediction);
@@ -324,9 +421,14 @@
       video.style.display = "none";
 
       uploadedImage.onload = async () => {
-        document.getElementById("result").innerText = "Scanning Image... 🔍";
+        document.getElementById("result").innerText =
+          currentLanguage === "ar" ? "جاري تحليل الصورة 🔍" : "Scanning Image... 🔍";
+
         document.getElementById("botMessage").innerText =
-          "Analyzing the uploaded image...";
+          currentLanguage === "ar" ? "جاري تحليل الصورة المرفوعة..." : "Analyzing the uploaded image...";
+
+        speak(currentLanguage === "ar" ? "جاري تحليل الصورة" : "Analyzing the image");
+
         const prediction = await model.predict(uploadedImage);
         showBestResult(prediction);
       };
@@ -348,23 +450,27 @@
         resetBins();
 
         document.getElementById("result").innerText =
-          "Unclear Result - " + confidence + "%";
+          currentLanguage === "ar"
+            ? "النتيجة غير واضحة - " + confidence + "%"
+            : "Unclear Result - " + confidence + "%";
 
         document.getElementById("result").style.background = "#ffffff";
 
         document.getElementById("advice").innerText =
-          "❌ The AI is not confident. Use better lighting, plain background, and one item only.";
+          currentLanguage === "ar"
+            ? "❌ الذكاء الاصطناعي غير متأكد. استخدم إضاءة أفضل وخلفية بسيطة وعنصرًا واحدًا فقط."
+            : "❌ The AI is not confident. Use better lighting, plain background, and one item only.";
 
         document.getElementById("botMessage").innerText =
-          "I am not confident enough. Use one item only, place it closer to the camera, use a plain background, and improve lighting.";
+          currentLanguage === "ar"
+            ? "أنا غير متأكد. قرّب العنصر من الكاميرا واستخدم خلفية واضحة."
+            : "I am not confident enough. Place one item closer to the camera and use a plain background.";
 
-        speak("The result is unclear. Try again with better lighting.");
+        speak(currentLanguage === "ar" ? "النتيجة غير واضحة" : "The result is unclear");
         return;
       }
 
-      document.getElementById("result").innerText =
-        label + " - " + confidence + "%";
-
+      document.getElementById("result").innerText = label + " - " + confidence + "%";
       giveAdvice(label);
     }
 
@@ -375,12 +481,39 @@
     }
 
     function speak(text) {
+      if (!("speechSynthesis" in window)) return;
+
       const msg = new SpeechSynthesisUtterance(text);
-      msg.lang = "en-US";
-      msg.rate = 0.95;
+      msg.lang = currentLanguage === "ar" ? "ar-SA" : "en-US";
+      msg.rate = 0.9;
 
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(msg);
+    }
+
+    function addPoints() {
+      ecoPoints += 10;
+      updateScore();
+    }
+
+    function updateScore() {
+      document.getElementById("score").innerText = ecoPoints;
+
+      let level = currentLanguage === "ar" ? "مبتدئ بيئي" : "Eco Beginner";
+
+      if (ecoPoints >= 50) {
+        level = currentLanguage === "ar" ? "بطل البيئة" : "Eco Hero";
+      }
+
+      if (ecoPoints >= 100) {
+        level = currentLanguage === "ar" ? "بطل إعادة التدوير" : "Recycling Champion";
+      }
+
+      if (ecoPoints >= 200) {
+        level = currentLanguage === "ar" ? "قائد الاستدامة في عُمان" : "Oman Sustainability Leader";
+      }
+
+      document.getElementById("level").innerText = level;
     }
 
     function giveAdvice(label) {
@@ -393,50 +526,114 @@
       const item = label.toLowerCase();
 
       if (item.includes("plastic")) {
-        advice = "♻️ Plastic detected. Put it in the BLUE bin.";
-        botText = "Plastic can be recycled if it is clean and dry. Empty bottles, rinse them quickly, remove leftover liquid, and crush them to save space. Do not mix dirty plastic with clean recycling.";
+        addPoints();
+
+        advice = currentLanguage === "ar"
+          ? "♻️ تم اكتشاف بلاستيك. ضعه في الحاوية الزرقاء."
+          : "♻️ Plastic detected. Put it in the BLUE bin.";
+
+        botText = currentLanguage === "ar"
+          ? "يجب أن يكون البلاستيك نظيفًا وجافًا قبل إعادة التدوير. أفرغ الزجاجات واشطفها بسرعة."
+          : "Plastic should be clean and dry. Empty bottles, rinse them quickly, and crush them to save space.";
+
         color = "#4da6ff";
         document.getElementById("plasticBin").classList.add("activeBin");
-        speak("Plastic detected. Put it in the blue bin.");
+
+        speak(currentLanguage === "ar"
+          ? "تم اكتشاف بلاستيك. ضعه في الحاوية الزرقاء. حصلت على عشر نقاط بيئية."
+          : "Plastic detected. Put it in the blue bin. You earned ten eco points.");
       }
 
       else if (item.includes("paper")) {
-        advice = "📄 Paper detected. Put it in the YELLOW bin.";
-        botText = "Paper should be clean and dry before recycling. Reuse it first if possible. Remove food stains, plastic covers, and tape. Dirty tissue or oily paper should not go into paper recycling.";
+        addPoints();
+
+        advice = currentLanguage === "ar"
+          ? "📄 تم اكتشاف ورق. ضعه في الحاوية الصفراء."
+          : "📄 Paper detected. Put it in the YELLOW bin.";
+
+        botText = currentLanguage === "ar"
+          ? "يجب أن يكون الورق نظيفًا وجافًا. لا تضع المناديل المتسخة أو الورق الزيتي مع الورق."
+          : "Paper should be clean and dry. Do not recycle dirty tissues or oily paper.";
+
         color = "#ffe066";
         document.getElementById("paperBin").classList.add("activeBin");
-        speak("Paper detected. Put it in the yellow bin.");
+
+        speak(currentLanguage === "ar"
+          ? "تم اكتشاف ورق. ضعه في الحاوية الصفراء. حصلت على عشر نقاط بيئية."
+          : "Paper detected. Put it in the yellow bin. You earned ten eco points.");
       }
 
       else if (item.includes("metal")) {
-        advice = "🥫 Metal detected. Put it in the RED bin.";
-        botText = "Metal cans can be recycled many times. Empty the can, rinse it quickly, and place it in the metal bin. If the metal is sharp, handle it carefully and ask an adult for help.";
+        addPoints();
+
+        advice = currentLanguage === "ar"
+          ? "🥫 تم اكتشاف معدن. ضعه في الحاوية الحمراء."
+          : "🥫 Metal detected. Put it in the RED bin.";
+
+        botText = currentLanguage === "ar"
+          ? "يمكن إعادة تدوير العلب المعدنية مرات عديدة. أفرغ العلبة واشطفها، وإذا كانت حادة اطلب مساعدة شخص بالغ."
+          : "Metal cans can be recycled many times. Empty and rinse the can. If it is sharp, ask an adult for help.";
+
         color = "#ff6b6b";
         document.getElementById("metalBin").classList.add("activeBin");
-        speak("Metal detected. Put it in the red bin.");
+
+        speak(currentLanguage === "ar"
+          ? "تم اكتشاف معدن. ضعه في الحاوية الحمراء. حصلت على عشر نقاط بيئية."
+          : "Metal detected. Put it in the red bin. You earned ten eco points.");
       }
 
       else if (item.includes("food")) {
-        advice = "🍃 Food waste detected. Put it in the GREEN bin for compost.";
-        botText = "Food waste should not go into normal recycling. Fruit peels, vegetable scraps, tea leaves, and coffee grounds can become compost. Avoid adding plastic, metal, or glass to compost.";
+        addPoints();
+
+        advice = currentLanguage === "ar"
+          ? "🍃 تم اكتشاف مخلفات طعام. ضعها في الحاوية الخضراء للسماد."
+          : "🍃 Food waste detected. Put it in the GREEN bin for compost.";
+
+        botText = currentLanguage === "ar"
+          ? "يمكن تحويل بقايا الطعام مثل قشور الفواكه والخضروات إلى سماد مفيد للتربة."
+          : "Food waste can become compost. Fruit peels and vegetable scraps are useful for soil.";
+
         color = "#63e66d";
         document.getElementById("foodBin").classList.add("activeBin");
-        speak("Food waste detected. Put it in the green bin for compost.");
+
+        speak(currentLanguage === "ar"
+          ? "تم اكتشاف مخلفات طعام. ضعها في الحاوية الخضراء. حصلت على عشر نقاط بيئية."
+          : "Food waste detected. Put it in the green bin. You earned ten eco points.");
       }
 
       else if (item.includes("clean")) {
-        advice = "✅ The area looks clean. Great job keeping the environment safe!";
-        botText = "The area looks clean. Keep it that way by checking regularly, reducing single-use items, and reminding others to sort waste correctly.";
+        addPoints();
+
+        advice = currentLanguage === "ar"
+          ? "✅ المكان نظيف. عمل رائع في حماية البيئة."
+          : "✅ The area looks clean. Great job keeping the environment safe!";
+
+        botText = currentLanguage === "ar"
+          ? "المكان نظيف. استمر في تقليل النفايات وتذكير الآخرين بفرز المخلفات بطريقة صحيحة."
+          : "The area looks clean. Keep reducing waste and remind others to sort correctly.";
+
         color = "#ffffff";
         document.getElementById("cleanBin").classList.add("activeBin");
-        speak("The area looks clean. Great job.");
+
+        speak(currentLanguage === "ar"
+          ? "المكان نظيف. عمل رائع. حصلت على عشر نقاط بيئية."
+          : "The area is clean. Great job. You earned ten eco points.");
       }
 
       else {
-        advice = "❌ Unknown item. Train the model better.";
-        botText = "I do not recognize this item. Add more training images to your Teachable Machine model from different angles, backgrounds, and lighting.";
+        advice = currentLanguage === "ar"
+          ? "❌ عنصر غير معروف. يجب تدريب النموذج بشكل أفضل."
+          : "❌ Unknown item. Train the model better.";
+
+        botText = currentLanguage === "ar"
+          ? "لم أتعرف على هذا العنصر. أضف صور تدريب أكثر من زوايا وإضاءات مختلفة."
+          : "I do not recognize this item. Add more training images from different angles and lighting.";
+
         color = "#ffffff";
-        speak("Unknown item. Train the model better.");
+
+        speak(currentLanguage === "ar"
+          ? "لم أتعرف على هذا العنصر"
+          : "Unknown item");
       }
 
       document.getElementById("advice").innerText = advice;
@@ -444,8 +641,8 @@
       document.getElementById("result").style.background = color;
     }
 
+    setLanguage("en");
     loadModel();
   </script>
-
 </body>
 </html>
